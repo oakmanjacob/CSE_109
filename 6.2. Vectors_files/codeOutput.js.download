@@ -1,0 +1,1286 @@
+define("codeOutput", ["exports"], function(exports) {
+var module = {};
+/* global HandlebarsComplete, ProgramFile */
+/* exported Level */
+'use strict';
+
+/**
+    Level stores a code |template| and template's |parameters|.
+    @class Level
+*/
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Level =
+
+/**
+    Initialize the Level.
+    @constructor
+    @param {String} template The template of the tool.
+    @param {Object} parameters Object in which each element contains an array.
+    @param {String} [explanation=''] The explanation, defaults to an empty string if not defined.
+    @param {String} language The language of the code.
+    @param {String} [input=''] The input for this level.
+*/
+function Level(template, parameters) {
+    var explanation = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+    var language = arguments[3];
+    var input = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : '';
+
+    _classCallCheck(this, Level);
+
+    /**
+        Templatized program files.
+        @property files
+        @type {Array} of {ProgramFile}
+        @default null
+    */
+    this.files = null;
+
+    if (typeof template === 'string') {
+        this.files = [new ProgramFile('main', true, HandlebarsComplete.compile(template))];
+    } else {
+        this.files = template.map(function (file) {
+            return new ProgramFile(file.filename, file.main, HandlebarsComplete.compile(file.program));
+        });
+
+        if (this.files.filter(function (file) {
+            return file.main;
+        }).length === 0) {
+            this.files[0].main = true;
+        }
+
+        // Move file with "main" function (if exists) to front of list.
+        var mainFile = this.files.find(function (file) {
+            return file.main;
+        });
+        var indexOfMain = this.files.indexOf(mainFile);
+
+        this.files.splice(indexOfMain, 1);
+        this.files.unshift(mainFile);
+    }
+
+    /**
+        The set of parameters for this question template.
+        @property parameters
+        @type {Object}
+    */
+    this.parameters = parameters;
+
+    /**
+        The explanation template.
+        @property explanation
+        @type {String}
+        @default ''
+    */
+    this.explanation = HandlebarsComplete.compile(explanation.replace(/\n/g, require('utilities').getNewline()));
+
+    /**
+        The programming language of this question template.
+        @property language
+        @type {String}
+    */
+    this.language = language;
+
+    /**
+        The input to send to the program.
+        @property input
+        @type {String}
+        @default ''
+    */
+    this.input = HandlebarsComplete.compile(input);
+};
+
+/* exported ProgramFile */
+
+
+'use strict';
+
+/**
+    A file for the codeOutput program.
+    @class ProgramFile
+*/
+
+var ProgramFile =
+
+/**
+    Initialize a codeOutput program file.
+    @constructor
+    @param {String} filename The name of the file.
+    @param {Boolean} main Whether this file is the program's main file.
+    @param {String} program The code of the file.
+*/
+function ProgramFile(filename, main, program) {
+    _classCallCheck(this, ProgramFile);
+
+    this.filename = filename;
+    this.main = Boolean(main);
+    this.program = program;
+};
+
+/* global Ember, isLanguageAZyFlowchart */
+/* exported Question */
+
+
+'use strict';
+
+/**
+    A question.
+    @class Question
+*/
+
+var Question = function () {
+
+    /**
+        Initialize the Question
+        @constructor
+        @param {String} code The code of the question.
+        @param {String} explanation The explanation to this question's answer.
+        @param {String} language The programming language of the code.
+        @param {String} input The input for this question's code.
+        @param {Array} [files=[]] Array of {ProgramFile} objects. The different program files composing this question.
+    */
+    function Question(code, explanation, language, input) {
+        var files = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
+
+        _classCallCheck(this, Question);
+
+        /**
+            The code for this question.
+            @property code
+            @type {String}
+        */
+        this.code = code;
+
+        /**
+            The explanation for this question.
+            @property explanation
+            @type {String}
+        */
+        this.explanation = explanation;
+
+        /**
+            The programming language for this question.
+            @property language
+            @type {String}
+        */
+        this.language = language;
+
+        /**
+            The program files for this question.
+            @property files
+            @type {Array} of {ProgramFile}
+        */
+        this.files = files;
+
+        /**
+            The input for this question's code.
+            @property input
+            @type {String}
+        */
+        this.input = input;
+
+        /**
+            Whether this level has an input for the program.
+            @property hasInput
+            @type {Boolean}
+            @default false
+        */
+        this.hasInput = this.input !== '';
+
+        /**
+            The expected answer for this question.
+            @property expectedAnswer
+            @type {String}
+            @default null
+        */
+        this.expectedAnswer = null;
+
+        /**
+            The server request promise for languages that need to connect to a server to compile/run code.
+            @property serverRequestPromise
+            @type {Promise}
+            @default null
+        */
+        this.serverRequestPromise = null;
+
+        /**
+            The reject function for the previous server request.
+            @property rejectPreviousRequest
+            @type {Function}
+            @default null
+        */
+        this.rejectPreviousRequest = null;
+    }
+
+    /**
+        Stop the existing server request.
+        @method stopServerRequest
+        @return {void}
+    */
+
+
+    _createClass(Question, [{
+        key: 'stopServerRequest',
+        value: function stopServerRequest() {
+            this.rejectPreviousRequest();
+            this.rejectPreviousRequest = null;
+        }
+
+        /**
+            Whether the server request was rejected.
+            @method isServerRequestRejected
+            @return {Boolean}
+        */
+
+    }, {
+        key: 'isServerRequestRejected',
+        value: function isServerRequestRejected() {
+            return this.serverRequestPromise.isRejected;
+        }
+
+        /**
+            Alert the user that there is an error with the |code|.
+            A customer should never see the alert; instead, an author should get this alert while testing.
+            @method compilerError
+            @param {String} error The error generated.
+            @return {void}
+        */
+
+    }, {
+        key: 'compilerError',
+        value: function compilerError(error) {
+            alert('Error in generated program:\n' + error); // eslint-disable-line no-alert
+        }
+
+        /**
+            Set the expected output for the given |code|.
+            @method setExpectedAnswer
+            @return {void}
+        */
+
+    }, {
+        key: 'setExpectedAnswer',
+        value: function setExpectedAnswer() {
+            if (isLanguageAZyFlowchart(this.language)) {
+                this.setExpectedAnswerViaZyFlowchartExecution();
+            } else {
+                this.setExpectedAnswerViaServerRequests();
+            }
+        }
+
+        /**
+            Set the expected output by executing the given |code|.
+            @method setExpectedAnswerViaZyFlowchartExecution
+            @return {void}
+        */
+
+    }, {
+        key: 'setExpectedAnswerViaZyFlowchartExecution',
+        value: function setExpectedAnswerViaZyFlowchartExecution() {
+            var _this = this;
+
+            this.serverRequestPromise = new Ember.RSVP.Promise(function (resolve, reject) {
+                _this.rejectPreviousRequest = reject;
+
+                var executor = null;
+
+                try {
+                    executor = require('zyFlowchartSDK').create().makeExecutor(_this.code, _this.input, true);
+                } catch (error) {
+                    _this.compilerError(error);
+                    reject(error);
+                }
+
+                executor.enterExecution();
+
+                // Execute until program done.
+                while (!executor.isExecutionDone()) {
+                    executor.execute();
+                }
+
+                _this.expectedAnswer = executor.output.output;
+                resolve();
+            });
+        }
+
+        /**
+            Set the expected output for the given |code| by compiling/running on the server.
+            @method setExpectedAnswerViaServerRequests
+            @return {void}
+        */
+
+    }, {
+        key: 'setExpectedAnswerViaServerRequests',
+        value: function setExpectedAnswerViaServerRequests() {
+            var _this2 = this;
+
+            var errorMessage = 'We can\'t seem to reach our server. Please check your Internet connection, or try refreshing the page.';
+            var utilities = require('utilities');
+
+            // The server should only be sent program files if there are multiple files. Otherwise, send an empty array.
+            var files = this.files.length > 1 ? JSON.stringify(this.files) : [];
+
+            this.serverRequestPromise = new Ember.RSVP.Promise(function (resolve, reject) {
+                _this2.rejectPreviousRequest = reject;
+
+                // Compile the code.
+                var url = 'compile_code';
+                var params = {
+                    code: _this2.code,
+                    language: _this2.language,
+                    files: files,
+                    input: _this2.input
+                };
+
+                utilities.zyDEServer('POST', url, params,
+
+                // Compilation done
+                function (data) {
+
+                    // Report errors.
+                    if (typeof data.result !== 'undefined') {
+                        _this2.compilerError(data.result.toString());
+                    }
+                    if (typeof data.error !== 'undefined') {
+                        _this2.compilerError(data.error.toString());
+                    }
+
+                    // If compilation was successful, move on to running the code.
+                    if (typeof data.success === 'undefined') {
+                        resolve();
+                    } else {
+                        url = 'run_code';
+                        params = {
+                            session_id: data.session_id, // eslint-disable-line camelcase
+                            language: _this2.language,
+                            filename: data.filename,
+                            input: _this2.input
+                        };
+
+                        utilities.zyDEServer('GET', url, params, function (data2) {
+
+                            // Report errors.
+                            if (typeof data2.error !== 'undefined') {
+                                _this2.compilerError(data2.error.toString());
+                                reject(data2.error.toString());
+                            }
+
+                            // Store the expected answer.
+                            if (typeof data2.result === 'undefined') {
+                                reject('No expected answer returned.');
+                            } else {
+                                _this2.expectedAnswer = data2.result.toString();
+                                resolve();
+                            }
+                        }, function () {
+                            reject(errorMessage);
+                        });
+                    }
+                }, function () {
+                    reject(errorMessage);
+                });
+            });
+        }
+    }]);
+
+    return Question;
+}();
+
+/* global Question, ProgramFile, isLanguageAZyFlowchart, HandlebarsComplete */
+/* exported QuestionFactory */
+
+
+'use strict';
+
+/**
+    Stores parameterized levels. Used to generate a specific question for a given level number.
+    @class QuestionFactory
+*/
+
+var QuestionFactory = function () {
+
+    /**
+        Initializes the {QuestionFactory} object.
+        @constructor
+        @param {Array} levels {Array} of {Level}. Contains a {Level} object for each level.
+    */
+    function QuestionFactory(levels) {
+        _classCallCheck(this, QuestionFactory);
+
+        /**
+            List of {Level} for the progression.
+            @property levels
+            @type {Array}
+        */
+        this.levels = levels;
+    }
+
+    /**
+        Makes a question selecting random values from the parameters list.
+        @method make
+        @param {Number} levelIndex The number of the level to build.
+        @return {Question} The newly made question.
+    */
+
+
+    _createClass(QuestionFactory, [{
+        key: 'make',
+        value: function make(levelIndex) {
+            var level = this.levels[levelIndex];
+            var parameters = require('utilities').getParameterCombination(level.parameters);
+
+            // Remove the helper while we build the code.
+            if (isLanguageAZyFlowchart(level.language)) {
+                HandlebarsComplete.registerHelper('executeForFinalValueOf', function () {
+                    return '|Error: executeForFinalValueOf only for prompt and explanation|';
+                });
+            }
+
+            // Set parameter values in the code of the different files
+            var files = level.files.map(function (file) {
+                var programFile = new ProgramFile(file.filename, file.main, file.program);
+
+                programFile.program = programFile.program(parameters);
+                return programFile;
+            });
+
+            var code = files.find(function (file) {
+                return file.main;
+            }).program;
+
+            // Add helper to execute the program. Used for getting the final value of a variable.
+            if (isLanguageAZyFlowchart(level.language)) {
+                HandlebarsComplete.registerHelper('executeForFinalValueOf', function (variableName) {
+                    var executor = require('zyFlowchartSDK').create().makeExecutor(code, null, true);
+
+                    executor.enterExecution();
+
+                    var mainFunction = executor.stack[0].function;
+
+                    // Execute until program done.
+                    while (!executor.isExecutionDone()) {
+                        executor.execute();
+                    }
+
+                    return mainFunction.getVariableValueByName(variableName);
+                });
+            }
+            var explanation = level.explanation(parameters);
+            var input = level.input(parameters);
+
+            return new Question(code, explanation, level.language, input, files);
+        }
+    }]);
+
+    return QuestionFactory;
+}();
+
+/* global Level, Ember, isLanguageAZyFlowchart, zyFlowchartRenderTypeMap, QuestionFactory */
+/* exported CodeOutput */
+
+
+'use strict';
+
+/**
+    Progression that generates problems where the students have to write the output of a generated program.
+    @module CodeOutput
+    @return {void}
+*/
+
+var CodeOutput = function () {
+
+    /**
+        @constructor
+    */
+    function CodeOutput() {
+        _classCallCheck(this, CodeOutput);
+
+        this["codeOutput"] = this["codeOutput"] || {};
+
+        this["codeOutput"]["codeOutput"] = Handlebars.template({ "1": function _(container, depth0, helpers, partials, data) {
+                return "                        <div class='program-container'></div>\n";
+            }, "3": function _(container, depth0, helpers, partials, data) {
+                var helper;
+
+                return "                        <div id='segmented-control-container" + container.escapeExpression((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : helpers.helperMissing, typeof helper === "function" ? helper.call(depth0 != null ? depth0 : container.nullContext || {}, { "name": "id", "hash": {}, "data": data }) : helper)) + "' class='segmented-control'></div>\n                        <div class='code'></div>\n";
+            }, "5": function _(container, depth0, helpers, partials, data) {
+                return "                    <td class='console-container'>\n                        <div class='IO-container'>\n                            <div class='input-container'>\n                                <div class='IO-label'>Input</div>\n                                <div class='input-div'></div>\n                            </div>\n                            <div class='IO-label'>Output</div>\n                            <textarea class='console' autocomplete='off' autocorrect='off' autocapitalize='off' spellcheck='false'></textarea>\n                        </div>\n                    </td>\n";
+            }, "compiler": [7, ">= 4.0.0"], "main": function main(container, depth0, helpers, partials, data) {
+                var stack1,
+                    alias1 = depth0 != null ? depth0 : container.nullContext || {};
+
+                return "<div class='tool-container'>\n    <div class='console character-sizing'>x</div>\n    <p>Type the program's output.</p>\n    <table>\n        <tbody>\n            <tr>\n                <td>\n" + ((stack1 = helpers["if"].call(alias1, depth0 != null ? depth0.isCodeZyFlowchart : depth0, { "name": "if", "hash": {}, "fn": container.program(1, data, 0), "inverse": container.program(3, data, 0), "data": data })) != null ? stack1 : "") + "                </td>\n" + ((stack1 = helpers.unless.call(alias1, depth0 != null ? depth0.isCodeZyFlowchart : depth0, { "name": "unless", "hash": {}, "fn": container.program(5, data, 0), "inverse": container.noop, "data": data })) != null ? stack1 : "") + "            </tr>\n        </tbody>\n    </table>\n</div>\n";
+            }, "useData": true });
+
+        this["codeOutput"]["codeOutputAccessible"] = Handlebars.template({ "1": function _(container, depth0, helpers, partials, data) {
+                var stack1;
+
+                return "    <ul>\n" + ((stack1 = helpers.each.call(depth0 != null ? depth0 : container.nullContext || {}, (stack1 = depth0 != null ? depth0.question : depth0) != null ? stack1.files : stack1, { "name": "each", "hash": {}, "fn": container.program(2, data, 0), "inverse": container.noop, "data": data })) != null ? stack1 : "") + "    </ul>\n";
+            }, "2": function _(container, depth0, helpers, partials, data) {
+                var helper,
+                    alias1 = depth0 != null ? depth0 : container.nullContext || {},
+                    alias2 = helpers.helperMissing,
+                    alias3 = "function",
+                    alias4 = container.escapeExpression;
+
+                return "            <li>\n                <p>" + alias4((helper = (helper = helpers.filename || (depth0 != null ? depth0.filename : depth0)) != null ? helper : alias2, (typeof helper === 'undefined' ? 'undefined' : _typeof(helper)) === alias3 ? helper.call(alias1, { "name": "filename", "hash": {}, "data": data }) : helper)) + "</p>\n                <pre>" + alias4((helper = (helper = helpers.program || (depth0 != null ? depth0.program : depth0)) != null ? helper : alias2, (typeof helper === 'undefined' ? 'undefined' : _typeof(helper)) === alias3 ? helper.call(alias1, { "name": "program", "hash": {}, "data": data }) : helper)) + "</pre>\n            </li>\n";
+            }, "4": function _(container, depth0, helpers, partials, data) {
+                var stack1;
+
+                return (stack1 = helpers.each.call(depth0 != null ? depth0 : container.nullContext || {}, (stack1 = depth0 != null ? depth0.question : depth0) != null ? stack1.files : stack1, { "name": "each", "hash": {}, "fn": container.program(5, data, 0), "inverse": container.noop, "data": data })) != null ? stack1 : "";
+            }, "5": function _(container, depth0, helpers, partials, data) {
+                var helper;
+
+                return "        <pre>" + container.escapeExpression((helper = (helper = helpers.program || (depth0 != null ? depth0.program : depth0)) != null ? helper : helpers.helperMissing, typeof helper === "function" ? helper.call(depth0 != null ? depth0 : container.nullContext || {}, { "name": "program", "hash": {}, "data": data }) : helper)) + "</pre>\n";
+            }, "7": function _(container, depth0, helpers, partials, data) {
+                var stack1;
+
+                return "    <p>Program's input:</p>\n    <pre>" + container.escapeExpression(container.lambda((stack1 = depth0 != null ? depth0.question : depth0) != null ? stack1.input : stack1, depth0)) + "</pre>\n";
+            }, "9": function _(container, depth0, helpers, partials, data) {
+                var stack1;
+
+                return "    <p>Explanation: " + ((stack1 = container.lambda((stack1 = depth0 != null ? depth0.question : depth0) != null ? stack1.explanation : stack1, depth0)) != null ? stack1 : "") + "</p>\n";
+            }, "compiler": [7, ">= 4.0.0"], "main": function main(container, depth0, helpers, partials, data) {
+                var stack1,
+                    alias1 = depth0 != null ? depth0 : container.nullContext || {};
+
+                return "<p>Program:</p>\n" + ((stack1 = helpers["if"].call(alias1, depth0 != null ? depth0.hasMultipleFiles : depth0, { "name": "if", "hash": {}, "fn": container.program(1, data, 0), "inverse": container.program(4, data, 0), "data": data })) != null ? stack1 : "") + "\n" + ((stack1 = helpers["if"].call(alias1, (stack1 = depth0 != null ? depth0.question : depth0) != null ? stack1.hasInput : stack1, { "name": "if", "hash": {}, "fn": container.program(7, data, 0), "inverse": container.noop, "data": data })) != null ? stack1 : "") + "<p>Program's output:</p>\n<pre>" + container.escapeExpression(container.lambda((stack1 = depth0 != null ? depth0.question : depth0) != null ? stack1.expectedAnswer : stack1, depth0)) + "</pre>\n\n" + ((stack1 = helpers["if"].call(alias1, (stack1 = depth0 != null ? depth0.question : depth0) != null ? stack1.explanation : stack1, { "name": "if", "hash": {}, "fn": container.program(9, data, 0), "inverse": container.noop, "data": data })) != null ? stack1 : "");
+            }, "useData": true });
+
+        this["codeOutput"]["explanation"] = Handlebars.template({ "1": function _(container, depth0, helpers, partials, data) {
+                var helper;
+
+                return "    " + container.escapeExpression((helper = (helper = helpers.hintMessage || (depth0 != null ? depth0.hintMessage : depth0)) != null ? helper : helpers.helperMissing, typeof helper === "function" ? helper.call(depth0 != null ? depth0 : container.nullContext || {}, { "name": "hintMessage", "hash": {}, "data": data }) : helper)) + "\n";
+            }, "3": function _(container, depth0, helpers, partials, data) {
+                var stack1, helper;
+
+                return "    " + ((stack1 = (helper = (helper = helpers.explanation || (depth0 != null ? depth0.explanation : depth0)) != null ? helper : helpers.helperMissing, typeof helper === "function" ? helper.call(depth0 != null ? depth0 : container.nullContext || {}, { "name": "explanation", "hash": {}, "data": data }) : helper)) != null ? stack1 : "") + "\n";
+            }, "5": function _(container, depth0, helpers, partials, data) {
+                return "    <div>\n        Learn more: <button class='zb-button secondary thin-title special-character-legend'>\n            <span class='title'>Special character legend</span>\n        </button>\n    </div>\n";
+            }, "7": function _(container, depth0, helpers, partials, data) {
+                return "    <div>A newline is created by pressing Enter or Return on your keyboard.</div>\n";
+            }, "9": function _(container, depth0, helpers, partials, data) {
+                var stack1, helper;
+
+                return "                    <div class='output user-output'>" + ((stack1 = (helper = (helper = helpers.userOutput || (depth0 != null ? depth0.userOutput : depth0)) != null ? helper : helpers.helperMissing, typeof helper === "function" ? helper.call(depth0 != null ? depth0 : container.nullContext || {}, { "name": "userOutput", "hash": {}, "data": data }) : helper)) != null ? stack1 : "") + "</div>\n";
+            }, "11": function _(container, depth0, helpers, partials, data) {
+                return "                    <div class='no-result-value'>Yours has no output</div>\n";
+            }, "13": function _(container, depth0, helpers, partials, data) {
+                var stack1,
+                    helper,
+                    alias1 = depth0 != null ? depth0 : container.nullContext || {},
+                    alias2 = helpers.helperMissing,
+                    alias3 = "function";
+
+                return "                    <div class='expected-output-container'>\n                        <div class='output expected-output'>" + ((stack1 = (helper = (helper = helpers.expectedOutput || (depth0 != null ? depth0.expectedOutput : depth0)) != null ? helper : alias2, (typeof helper === 'undefined' ? 'undefined' : _typeof(helper)) === alias3 ? helper.call(alias1, { "name": "expectedOutput", "hash": {}, "data": data }) : helper)) != null ? stack1 : "") + "</div>\n                        <div class='newline-messaging'>" + ((stack1 = (helper = (helper = helpers.newlineMessaging || (depth0 != null ? depth0.newlineMessaging : depth0)) != null ? helper : alias2, (typeof helper === 'undefined' ? 'undefined' : _typeof(helper)) === alias3 ? helper.call(alias1, { "name": "newlineMessaging", "hash": {}, "data": data }) : helper)) != null ? stack1 : "") + "</div>\n                    </div>\n";
+            }, "15": function _(container, depth0, helpers, partials, data) {
+                return "                    <div class='no-result-value'>Expected no output</div>\n";
+            }, "compiler": [7, ">= 4.0.0"], "main": function main(container, depth0, helpers, partials, data) {
+                var stack1,
+                    alias1 = depth0 != null ? depth0 : container.nullContext || {};
+
+                return ((stack1 = helpers["if"].call(alias1, depth0 != null ? depth0.isWhitespaceTheOnlyDifference : depth0, { "name": "if", "hash": {}, "fn": container.program(1, data, 0), "inverse": container.program(3, data, 0), "data": data })) != null ? stack1 : "") + ((stack1 = helpers["if"].call(alias1, depth0 != null ? depth0.showSpecialCharacterLegendButton : depth0, { "name": "if", "hash": {}, "fn": container.program(5, data, 0), "inverse": container.noop, "data": data })) != null ? stack1 : "") + ((stack1 = helpers["if"].call(alias1, depth0 != null ? depth0.wasNewlineExpectedButMissing : depth0, { "name": "if", "hash": {}, "fn": container.program(7, data, 0), "inverse": container.noop, "data": data })) != null ? stack1 : "") + "<div>\n    <table class='explanation-table'>\n        <tr>\n            <td class='explanation-description'>Yours</td>\n            <td>\n" + ((stack1 = helpers["if"].call(alias1, depth0 != null ? depth0.userOutput : depth0, { "name": "if", "hash": {}, "fn": container.program(9, data, 0), "inverse": container.program(11, data, 0), "data": data })) != null ? stack1 : "") + "            </td>\n        </tr>\n        <tr>\n            <td class='explanation-description'>Expected</td>\n            <td>\n" + ((stack1 = helpers["if"].call(alias1, depth0 != null ? depth0.expectedOutput : depth0, { "name": "if", "hash": {}, "fn": container.program(13, data, 0), "inverse": container.program(15, data, 0), "data": data })) != null ? stack1 : "") + "            </td>\n        </tr>\n    </table>\n</div>";
+            }, "useData": true });
+
+        /**
+            The unique ID assigned to this instance of the module.
+            @property id
+            @type {Number}
+            @default null
+        */
+        this.id = null;
+
+        /**
+            The instance of a progression tool used for this instance of the module.
+            @property progressionTool
+            @type {ProgressionTool}
+            @default null
+        */
+        this.progressionTool = null;
+
+        /**
+            The instance of a segmented control tool used for this instance of the module.
+            @property segmentedControl
+            @type {SegmentedControl}
+            @default null
+        */
+        this.segmentedControl = null;
+
+        /**
+            The height of a character in the output.
+            @property characterHeight
+            @type {Number}
+            @default null
+        */
+        this.characterHeight = null;
+
+        /**
+            The width of a character in the output.
+            @property characterWidth
+            @type {Number}
+            @default null
+        */
+        this.characterWidth = null;
+
+        /**
+            Stores the currently shown question.
+            @property currentQuestion
+            @type {Question}
+            @default null
+        */
+        this.currentQuestion = null;
+
+        /**
+            Whether the previous question's issue was only a whitespace difference.
+            @property previousQuestionWhitespaceDiff
+            @type {Boolean}
+            @default false
+        */
+        this.previousQuestionWhitespaceDiff = false;
+
+        /**
+            The index of the previous question.
+            @property previousQuestionIndex
+            @type {Number}
+            @default null
+        */
+        this.previousQuestionIndex = null;
+
+        /**
+            Whether the code is zyFlowchart.
+            @property isCodeZyFlowchart
+            @type {Boolean}
+            @default null
+        */
+        this.isCodeZyFlowchart = null;
+
+        /**
+            The type of zyFlowchart to render. Valid values: 'flowchart', 'pseudocode', or 'both' (as defined by the ExecutorController in zyFlowchartSDK).
+            @property zyFlowchartRenderType
+            @type {String}
+            @default null
+        */
+        this.zyFlowchartRenderType = null;
+
+        /**
+            The executor controller used for flowchart and pseudocode.
+            @property executorController
+            @type {ExecutorController}
+            @default null
+        */
+        this.executorController = null;
+
+        /**
+            A question cache of already-generated questions.
+            @property questionCache
+            @type {QuestionFache}
+            @default null
+        */
+        this.questionCache = null;
+
+        /**
+            The handlebars templates for rendering HTML.
+            @property templates
+            @type {Object}
+            @default null
+        */
+        this.templates = null;
+
+        /**
+            A dictionary of functions given by the parent resource.
+            @property parentResource
+            @type {Object}
+            @default null
+        */
+        this.parentResource = null;
+    }
+
+    /**
+        Initialize the progression.
+        @method init
+        @param {String} id The unique identifier given to this module.
+        @param {Object} parentResource A dictionary of functions given by the parent resource.
+        @param {Object} options The options passed to this instance of the tool.
+        @return {void}
+    */
+
+
+    _createClass(CodeOutput, [{
+        key: 'init',
+        value: function init(id, parentResource, options) {
+            var _this3 = this;
+
+            this.id = id;
+            this.progressionTool = require('progressionTool').create();
+            this.parentResource = parentResource;
+
+            var levels = options.questions.map(function (question) {
+                return new Level(question.template, question.parameters, question.explanation, options.language, question.input);
+            });
+            var questionFactory = new QuestionFactory(levels);
+            var maxQuestionsToCache = 5;
+
+            this.questionCache = require('utilities').getQuestionCache(questionFactory, maxQuestionsToCache);
+
+            this.isCodeZyFlowchart = isLanguageAZyFlowchart(options.language);
+            if (this.isCodeZyFlowchart) {
+                this.zyFlowchartRenderType = zyFlowchartRenderTypeMap[options.language];
+            }
+
+            var css = '<style>.zyante-bold{font-family:HelveticaNeue-Light,"Helvetica Neue Light","Helvetica Neue",Helvetica,Arial,"Lucida Grande",sans-serif;font-weight:300}.zyante-section-bold{font-family:Helvetica;font-weight:300}div.codeOutput{min-width:900px}div.codeOutput textarea.console{-moz-border-radius:5px;background:#f3f3f3;border-radius:5px;border:1px solid #000;font-family:"Courier New",monospace;font-size:24px;overflow:hidden;padding:8px;resize:none}div.codeOutput textarea.console:not(:disabled){border-color:#333;box-shadow:inset 0 1px 2px rgba(0,0,0,.075),0 0 5px rgba(51,51,51,.5);outline:0}div.codeOutput div.tool-container>p{font-size:18px;padding-bottom:10px;text-align:center}div.codeOutput div.tool-container>table{margin:0 auto}div.codeOutput div.tool-container>table .console-container{min-width:230px;padding-left:15px;text-align:left}div.codeOutput div.tool-container div.segmented-control{margin-bottom:8px}div.codeOutput div.tool-container div.input-container{margin-bottom:15px}div.codeOutput div.tool-container div.IO-label{font-size:16px;margin-bottom:2px}div.codeOutput div.tool-container div.input-div{-moz-appearance:textfield-multiline;-webkit-appearance:textarea;-webkit-box-shadow:inset 1px 1px 1px 0 #ccc;-moz-box-shadow:inset 1px 1px 1px 0 #ccc;background-color:#efefef;border:1px solid #ccc;box-shadow:inset 1px 1px 1px 0 #ccc;height:50px;overflow-y:auto;padding:2px}div.codeOutput table.explanation-table{color:#333;display:inline-table;font-size:16px;margin-top:15px;vertical-align:-50%}div.codeOutput table.explanation-table td{padding-bottom:8px}div.codeOutput table.explanation-table td.explanation-description{text-align:right;padding-right:10px}div.codeOutput table.explanation-table td div.expected-output-container{display:flex}div.codeOutput table.explanation-table td div.expected-output-container div.newline-messaging span.newline-message{font-size:12px}div.codeOutput table.explanation-table td div.output,div.codeOutput table.explanation-table td div.newline-messaging{border-width:1px;box-sizing:border-box;color:#37474f;display:inline-block;font-family:"Courier New",monospace;margin:0;overflow-x:auto;padding:4px 10px;white-space:pre}div.codeOutput table.explanation-table td div.output{background-color:#f5f5f5;border-style:solid;border-color:rgba(189,189,189,.5);border-radius:2px}div.codeOutput table.explanation-table td div.no-result-value{color:#B90B13;font-style:italic}div.codeOutput div.console.character-sizing{border:0;font-size:24px;line-height:normal;padding:0}</style>';
+
+            if (this.isCodeZyFlowchart) {
+                css += require('zyFlowchartSDK').create().css;
+                $('#' + id).addClass('zyFlowchartSDK');
+            }
+
+            this.templates = this['codeOutput'];
+            var html = this.templates.codeOutput({ id: id, isCodeZyFlowchart: this.isCodeZyFlowchart });
+
+            this.progressionTool.init(id, parentResource, {
+                html: html,
+                css: css,
+                numToWin: levels.length,
+                useMultipleParts: true,
+                start: function start() {
+                    _this3.makeLevel(0);
+                    _this3.lookupClass('console').focus();
+
+                    // Enable the language controls.
+                    if (_this3.isCodeZyFlowchart) {
+                        _this3.executorController.setIsSegmentedLanguageControlEnabled(true);
+                    }
+                },
+                reset: function reset() {
+                    _this3.makeLevel(0, true);
+                    _this3.lookupClass('console').attr('disabled', true);
+                },
+                next: function next(currentQuestion) {
+                    _this3.makeLevel(currentQuestion);
+                    _this3.lookupClass('console').focus();
+
+                    // Enable the language controls.
+                    if (_this3.isCodeZyFlowchart) {
+                        _this3.executorController.setIsSegmentedLanguageControlEnabled(true);
+                    }
+                },
+                isCorrect: function isCorrect(currentQuestionIndex) {
+
+                    // Disable the language controls.
+                    if (_this3.isCodeZyFlowchart) {
+                        _this3.executorController.setIsSegmentedLanguageControlEnabled(false);
+                    }
+
+                    // If the server request for the expected answer was rejected, then try again.
+                    if (_this3.currentQuestion.isServerRequestRejected()) {
+                        _this3.currentQuestion.setExpectedAnswer();
+                    }
+
+                    return new Ember.RSVP.Promise(function (resolve, reject) {
+                        _this3.currentQuestion.serverRequestPromise.then(function () {
+                            var userAnswer = _this3.lookupClass('console').val();
+                            var expectedAnswer = _this3.currentQuestion.expectedAnswer;
+                            var isAnswerCorrect = userAnswer === expectedAnswer;
+
+                            _this3.lookupClass('console').attr('disabled', true);
+
+                            if (parentResource.buildStringDifferenceObject) {
+                                parentResource.buildStringDifferenceObject(expectedAnswer, userAnswer).then(function (stringDifferenceObject) {
+                                    var userDifferences = stringDifferenceObject.userAnswerDiffIndices.map(function (index) {
+                                        return userAnswer[index];
+                                    });
+                                    var expectedDifferences = stringDifferenceObject.expectedAnswerDiffIndices.map(function (index) {
+                                        return expectedAnswer[index];
+                                    });
+                                    var allDifferences = userDifferences.concat(expectedDifferences);
+                                    var wasNewlineExpectedButMissing = expectedDifferences.some(function (difference) {
+                                        return (/\n/.test(difference)
+                                        );
+                                    });
+                                    var isWhitespaceTheOnlyDifference = allDifferences.length && allDifferences.every(function (difference) {
+                                        return (/\s/.test(difference)
+                                        );
+                                    });
+
+                                    _this3.resolveIsCorrect({
+                                        currentQuestionIndex: currentQuestionIndex,
+                                        expectedAnswer: expectedAnswer,
+                                        expectedOutput: stringDifferenceObject.expectedAnswerHTML,
+                                        expectedOutputDiffIndices: stringDifferenceObject.expectedAnswerDiffIndices,
+                                        hintMessage: stringDifferenceObject.hintMessage,
+                                        isCorrect: isAnswerCorrect,
+                                        isWhitespaceTheOnlyDifference: isWhitespaceTheOnlyDifference,
+                                        parentResource: parentResource,
+                                        resolve: resolve,
+                                        showSpecialCharacterLegendButton: stringDifferenceObject.isReplacementADifference || stringDifferenceObject.isWhitespaceADifference,
+                                        userAnswer: userAnswer,
+                                        userOutput: stringDifferenceObject.userAnswerHTML,
+                                        wasNewlineExpectedButMissing: wasNewlineExpectedButMissing
+                                    });
+                                });
+                            }
+
+                            // Kept for 1.0 platform support.
+                            else {
+                                    var diffData = require('utilities').manageDiffHighlighting(parentResource, expectedAnswer, userAnswer);
+
+                                    _this3.resolveIsCorrect({
+                                        currentQuestionIndex: currentQuestionIndex,
+                                        expectedAnswer: expectedAnswer,
+                                        expectedOutput: diffData.highlightedExpectedOutput,
+                                        expectedOutputDiffIndices: diffData.expectedOutputDiffIndices,
+                                        hintMessage: 'Output is nearly correct; but whitespace differs. See highlights below.',
+                                        isCorrect: isAnswerCorrect,
+                                        isWhitespaceTheOnlyDifference: diffData.doesOnlyWhitespaceDiffer,
+                                        parentResource: parentResource,
+                                        resolve: resolve,
+                                        showSpecialCharacterLegendButton: false,
+                                        userAnswer: userAnswer,
+                                        userOutput: diffData.highlightedActualOutput,
+                                        wasNewlineExpectedButMissing: diffData.wasNewlineExpectedButMissing
+                                    });
+                                }
+                        }, function (errorMessage) {
+                            reject(errorMessage);
+                        });
+                    });
+                },
+                accessibleViewForLevel: function accessibleViewForLevel(levelIndex) {
+                    var question = _this3.questionCache.makeQuestion(levelIndex);
+                    var hasMultipleFiles = question.files.length > 1;
+
+                    question.setExpectedAnswer();
+
+                    return new Ember.RSVP.Promise(function (resolve, reject) {
+                        question.serverRequestPromise.then(function () {
+                            var accessibleHTML = _this3.templates.codeOutputAccessible({ hasMultipleFiles: hasMultipleFiles, question: question });
+
+                            resolve(accessibleHTML);
+                        }, function (errorMessage) {
+                            reject(errorMessage);
+                        });
+                    });
+                }
+            });
+
+            var useAccessibleView = parentResource.needsAccessible && parentResource.needsAccessible();
+
+            if (!useAccessibleView) {
+
+                // Compute exact size of a single character for use in |adjustConsoleSize|.
+                var $characterSizing = this.lookupClass('character-sizing');
+                var characterSizingBoundingRect = $characterSizing.get(0).getBoundingClientRect();
+
+                this.characterHeight = characterSizingBoundingRect.height;
+                this.characterWidth = characterSizingBoundingRect.width;
+                $characterSizing.remove();
+
+                // Initialize a level.
+                this.makeLevel(0, true);
+                this.lookupClass('console').attr('disabled', true);
+
+                if (!this.isCodeZyFlowchart) {
+                    this.lookupClass('console').on('input', function () {
+                        return _this3.adjustConsoleSize();
+                    });
+                }
+            }
+        }
+
+        /**
+            Resolve the isCorrect function call.
+            @method resolveIsCorrect
+            @param {Object} parameters A dictionary of parameters for resolving the isCorrect function call.
+            @param {Integer} parameters.currentQuestionIndex The index of the current level.
+            @param {String} parameters.expectedAnswer The expected answer.
+            @param {String} parameters.expectedOutput The output of the expected program.
+            @param {Array} expectedOutputDiffIndices Array of {Integers}. The indices of the differences in the expected output.
+            @param {String} parameters.hintMessage A hint to give the user.
+            @param {Boolean} parameters.isCorrect Whether the user's answer was correct.
+            @param {Boolean} parameters.isWhitespaceTheOnlyDifference Whether whitespace is the only difference.
+            @param {Object} parameters.parentResource A dictionary of functions given by the parent resource.
+            @param {Function} parameters.resolve Function to call to finish the resolving.
+            @param {Boolean} parameters.showSpecialCharacterLegendButton Whether to show the special character legend button.
+            @param {String} parameters.userAnswer The user's answer.
+            @param {String} parameters.userOutput The output of the user's program.
+            @param {Boolean} parameters.wasNewlineExpectedButMissing Whether a newline was expected but is missing.
+            @return {void}
+        */
+
+    }, {
+        key: 'resolveIsCorrect',
+        value: function resolveIsCorrect(parameters) {
+            var _this4 = this;
+
+            var newlineMessaging = '';
+
+            if (parameters.wasNewlineExpectedButMissing) {
+
+                /**
+                    Return the indices that correspond to a newline in the expected answer.
+                    @method getNewlineIndices
+                    @param {Array} indices Array of {Integer}. List of indices.
+                    @return {Array} of {Integer}. The indices that correspond to a newline in the expected output.
+                */
+                var getNewlineIndices = function getNewlineIndices(indices) {
+                    return indices.filter(function (index) {
+                        return (/[\n|\r]/.test(parameters.expectedAnswer[index])
+                        );
+                    });
+                };
+
+                // Find only indices for highlighted newlines in the expected output.
+                var highlightedExpectedNewlineIndices = getNewlineIndices(parameters.expectedOutputDiffIndices);
+
+                // Find all indices for newlines in the expected output.
+                var expectedOutputIndices = parameters.expectedAnswer.split('').map(function (character, index) {
+                    return index;
+                });
+                var expectedNewlineIndices = getNewlineIndices(expectedOutputIndices);
+
+                // Build the messaging. Each line of the messaging is either blank or states that a newline is missing on this line.
+                var newlineMessage = '<span class="newline-message">You are missing a newline here.</span>';
+                var lastLineNewlineMessage = '<span class="newline-message">You are missing a newline on the last line of your output.</span>'; // eslint-disable-line max-len
+
+                newlineMessaging = expectedNewlineIndices.map(function (expectedNewlineIndex) {
+                    var messagingThisLine = '';
+
+                    if (highlightedExpectedNewlineIndices.includes(expectedNewlineIndex)) {
+                        messagingThisLine = expectedNewlineIndex === parameters.expectedAnswer.length - 1 ? lastLineNewlineMessage : newlineMessage;
+                    }
+
+                    return messagingThisLine + '\n';
+                }).join('');
+            }
+
+            var explanationHTML = this.templates.explanation({
+                expectedOutput: parameters.expectedOutput,
+                explanation: this.currentQuestion.explanation,
+                hintMessage: parameters.hintMessage,
+                isWhitespaceTheOnlyDifference: parameters.isWhitespaceTheOnlyDifference,
+                newlineMessaging: newlineMessaging,
+                showSpecialCharacterLegendButton: parameters.showSpecialCharacterLegendButton,
+                userOutput: parameters.userOutput,
+                wasNewlineExpectedButMissing: parameters.wasNewlineExpectedButMissing
+            });
+            var explanationMessage = explanationHTML + require('utilities').getNewline();
+            var toolWidth = this.lookupClass('tool-container').width();
+
+            parameters.resolve({
+                explanationMessage: explanationMessage,
+                userAnswer: parameters.userAnswer,
+                expectedAnswer: parameters.expectedAnswer,
+                isCorrect: parameters.isCorrect,
+                callbackFunction: function callbackFunction() {
+                    _this4.lookupClass('zyante-progression-explanation-area').width(toolWidth);
+                    _this4.lookupClass('special-character-legend').click(function () {
+                        if (parameters.parentResource.showSpecialCharacterLegendModal) {
+                            parameters.parentResource.showSpecialCharacterLegendModal();
+                        }
+                    });
+                }
+            });
+
+            this.previousQuestionWhitespaceDiff = parameters.isWhitespaceTheOnlyDifference;
+            this.previousQuestionIndex = parameters.currentQuestionIndex;
+        }
+
+        /**
+            Resize |$console| textarea to match contents.
+            @method adjustConsoleSize
+            @return {void}
+        */
+
+    }, {
+        key: 'adjustConsoleSize',
+        value: function adjustConsoleSize() {
+            var $console = this.lookupClass('console');
+            var consoleText = $console.val();
+
+            // Adding guard in case console text is undefined.
+            var eachLine = (consoleText || '').split('\n');
+
+            // Compute the height of |$console| by the number of lines and height of a character.
+            $console.css('height', this.characterHeight * eachLine.length);
+
+            /*
+                Compute the width of |$console| by the longest line and width of a character.
+                |charactersInWidestLine| must be at least 1.
+            */
+            var lineLengths = eachLine.map(function (thisLine) {
+                return thisLine.length;
+            });
+            var charactersInWidestLine = Math.max.apply(Math, [1].concat(_toConsumableArray(lineLengths)));
+
+            // Safari Mobile browsers require an additional 6px.
+            var widthFudgeFactor = navigator.userAgent.match(/(iphone|ipod|ipad)/i) ? 6 : 0; // eslint-disable-line no-magic-numbers
+
+            // Windows 10 and IE 11 rounds down to the nearest 100th. Instead, round up.
+            var adjustedWidth = Math.ceil(this.characterWidth * charactersInWidestLine + widthFudgeFactor);
+
+            $console.css('width', adjustedWidth);
+        }
+
+        /**
+            Update the text in |$console| to be |newText|.
+            @method updateConsoleText
+            @param {String} newText The new console text.
+            @return {void}
+        */
+
+    }, {
+        key: 'updateConsoleText',
+        value: function updateConsoleText(newText) {
+            this.lookupClass('console').val(newText);
+            this.adjustConsoleSize();
+        }
+
+        /**
+            Display an equation given the |currentQuestionIndex|.
+            @method makeLevel
+            @param {Integer} currentQuestionIndex The index of the level of the question to build.
+            @param {Boolean} [shouldSetConsole=false] If true, set the console with the expected output.
+            @return {void}
+        */
+
+    }, {
+        key: 'makeLevel',
+        value: function makeLevel(currentQuestionIndex) {
+            var _this5 = this;
+
+            var shouldSetConsole = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+
+            // Enable input.
+            this.lookupClass('console').attr('disabled', false);
+
+            // If this is the same level and the previous attempt only had whitespace differences, then allow a retry.
+            var shouldRetryQuestion = this.previousQuestionWhitespaceDiff && this.previousQuestionIndex === currentQuestionIndex;
+
+            this.previousQuestionWhitespaceDiff = false;
+
+            if (!shouldRetryQuestion) {
+
+                // Stop server requests by the previous question.
+                if (this.currentQuestion) {
+                    this.currentQuestion.stopServerRequest();
+                }
+
+                this.currentQuestion = this.questionCache.makeQuestion(currentQuestionIndex);
+                this.currentQuestion.setExpectedAnswer();
+
+                if (this.isCodeZyFlowchart) {
+                    this.displayZyFlowchartCurrentQuestion();
+                } else {
+                    this.displayTextualCodeCurrentQuestion();
+
+                    var $inputDiv = this.lookupClass('input-div');
+                    var $ioLabel = this.lookupClass('IO-label');
+                    var $inputContainer = this.lookupClass('input-container');
+
+                    if (this.currentQuestion.hasInput) {
+                        $inputContainer.show();
+                        $ioLabel.show();
+                        $inputDiv.text(this.currentQuestion.input);
+
+                        // Set a maximum width for the input box based on the width of the code.
+                        var codeWidth = this.lookupClass('code').width();
+                        var maxToolWidth = 960;
+                        var margin = 50;
+                        var maxWidth = maxToolWidth - codeWidth - margin;
+
+                        $inputDiv.css('maxWidth', maxWidth);
+                    } else {
+                        $inputContainer.hide();
+                        $ioLabel.hide();
+                    }
+                }
+
+                this.updateConsoleText('');
+                this.parentResource.setSolution(' ');
+            }
+
+            // Set the console with |expectedAnswer| once computed, if |shouldSetConsole| is true.
+            if (shouldSetConsole) {
+                this.currentQuestion.serverRequestPromise.then(function () {
+                    _this5.updateConsoleText(_this5.currentQuestion.expectedAnswer);
+                });
+            }
+
+            // Set the solution, if supported.
+            if (this.parentResource.setSolution) {
+                this.currentQuestion.serverRequestPromise.then(function () {
+                    _this5.parentResource.setSolution(_this5.currentQuestion.expectedAnswer);
+                });
+            }
+        }
+
+        /**
+            Make a zyFlowchart level from the already generated |this.currentQuestion|.
+            @method displayZyFlowchartCurrentQuestion
+            @return {void}
+        */
+
+    }, {
+        key: 'displayZyFlowchartCurrentQuestion',
+        value: function displayZyFlowchartCurrentQuestion() {
+            var _this6 = this;
+
+            var executor = null;
+            var zyFlowchartSDK = require('zyFlowchartSDK').create();
+
+            try {
+                executor = zyFlowchartSDK.makeExecutor(this.currentQuestion.code, this.currentQuestion.input || null, true);
+            } catch (error) {
+                return;
+            }
+
+            var $programContainer = this.lookupClass('program-container');
+            var maxHeight = 550;
+            var maxWidth = 900;
+
+            this.executorController = zyFlowchartSDK.makeExecutorController(executor, $programContainer);
+            this.executorController.setIsCompact(true, maxHeight, maxWidth);
+            this.executorController.setIsOutputEditable(true, function () {
+                return _this6.adjustConsoleSize();
+            });
+            this.executorController.setIsInputEditable(false);
+            this.executorController.setLanguagesToShow(this.zyFlowchartRenderType);
+            this.executorController.setIsSegmentedLanguageControlEnabled(false);
+            this.executorController.render();
+        }
+
+        /**
+            Make a textual-code level from the already generated |this.currentQuestion|.
+            @method displayTextualCodeCurrentQuestion
+            @return {void}
+        */
+
+    }, {
+        key: 'displayTextualCodeCurrentQuestion',
+        value: function displayTextualCodeCurrentQuestion() {
+            var _this7 = this;
+
+            var segmentedControllerID = this.getSegmentedControllerContainerID();
+            var $segmentedControllerContainer = $('#' + segmentedControllerID);
+
+            if (this.currentQuestion.files.length > 1) {
+                $segmentedControllerContainer.show();
+            } else {
+                $segmentedControllerContainer.hide();
+            }
+
+            var $codeDiv = this.lookupClass('code');
+            var fileNames = this.currentQuestion.files.map(function (file) {
+                return file.filename;
+            });
+
+            $codeDiv.width('auto');
+            this.segmentedControl = require('segmentedControl').create();
+            this.segmentedControl.init(fileNames, segmentedControllerID, function (index, title) {
+                $codeDiv.html(_this7.currentQuestion.files.find(function (file) {
+                    return file.filename === title;
+                }).program);
+            });
+            $segmentedControllerContainer.click(function () {
+                return _this7.lookupClass('console').focus();
+            });
+
+            // Get the widest code and set it to be the width of |$codeDiv|
+            var codeWidths = fileNames.map(function (segmentTitle) {
+                _this7.segmentedControl.selectSegmentByTitle(segmentTitle);
+                return $codeDiv.width();
+            });
+            var maxCodeWidth = Math.max.apply(Math, _toConsumableArray(codeWidths));
+
+            $codeDiv.width(maxCodeWidth);
+            this.segmentedControl.selectSegmentByTitle(this.currentQuestion.files.find(function (file) {
+                return file.main;
+            }).filename);
+            $codeDiv.text(this.currentQuestion.code);
+        }
+
+        /**
+            Return the ID of the segmented controller's container.
+            @method getSegmentedControllerContainerID
+            @return {String} The ID of the segmented controller's container.
+        */
+
+    }, {
+        key: 'getSegmentedControllerContainerID',
+        value: function getSegmentedControllerContainerID() {
+            return 'segmented-control-container' + this.id;
+        }
+
+        /**
+            Return a jQuery reference to the given class name.
+            @method lookupClass
+            @param {String} className The name of the class to lookup.
+            @return {Object} A jQuery reference to the given class name.
+        */
+
+    }, {
+        key: 'lookupClass',
+        value: function lookupClass(className) {
+            return $('#' + this.id).find('.' + className);
+        }
+
+        /**
+            Reset hook for zyWeb to tell tool to reset itself.
+            @method reset
+            @return {void}
+        */
+
+    }, {
+        key: 'reset',
+        value: function reset() {
+            this.progressionTool.reset();
+        }
+    }]);
+
+    return CodeOutput;
+}();
+
+module.exports = {
+    create: function create() {
+        return new CodeOutput();
+    },
+    dependencies: {
+        "tools": ["utilities", "progressionTool", "segmentedControl", "zyFlowchartSDK"],
+        "vendorJS": ["handlebars.1.3.0.min.js"]
+    },
+
+    runTests: function runTests() {},
+    supportsAccessible: true
+};
+
+'use strict';
+
+/* exported zyFlowchartRenderTypeMap, isLanguageAZyFlowchart */
+
+var zyFlowchartRenderTypeMap = {
+    zyFlowchart: 'flowchart',
+    zyPseudocode: 'pseudocode',
+    zyFlowchartZyPseudocode: 'both'
+};
+
+/**
+    Return whether the language is a zyFlowchart language.
+    @method isLanguageAZyFlowchart
+    @param {String} language The language to check.
+    @return {Boolean} Whether the language is a zyFlowchart language.
+*/
+function isLanguageAZyFlowchart(language) {
+    return Object.keys(zyFlowchartRenderTypeMap).indexOf(language) !== -1;
+}
+
+
+exports.default = module.exports;
+});
