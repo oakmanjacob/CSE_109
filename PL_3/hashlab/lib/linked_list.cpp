@@ -58,6 +58,7 @@ bool LinkedList::insert_tail(int data)
 	if (head == NULL)
 	{
 		head = new Node(data);
+		tail = head;
 		length++;
 	}
 	else

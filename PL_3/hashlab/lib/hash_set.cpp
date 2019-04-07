@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <iostream>
 #include <hash_set.h>
 #include <linked_list.h>
 
@@ -61,6 +62,7 @@ bool HashSet::insert(const char* s)
 		if (table[hash] == NULL)
 		{
 			table[hash] = new LinkedList();
+			std::cout << table[hash] << std::endl;
 		}
 		
 		table[hash]->insert_tail(data);
@@ -93,13 +95,14 @@ bool HashSet::remove(const char *s)
  */
 int HashSet::hash_str(const char *s)
 {
-	int h = FIRSTH;
+	unsigned long h = FIRSTH;
 	while (*s)
 	{
 		h = (h * A) ^ (s[0] * B);
 		s++;
 	}
-	return h; // or return h % C;
+
+	return h % INT32_MAX; // or return h % C;
 }
 
 /**
