@@ -154,7 +154,7 @@ bool LinkedList::remove_at_index(int index)
 int LinkedList::find(int data)
 {
 	Node *curNode = head;
-	unsigned int i = 0;
+	int i = 0;
 	while (curNode != NULL)
 	{
 		if (curNode->data == data)

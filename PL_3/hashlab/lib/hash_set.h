@@ -4,12 +4,12 @@ class HashSet {
 	public:
 		HashSet(int size);
 		~HashSet();
-		bool contains(char* s);
-		bool insert(char* s);
-		bool remove(char* s);
+		bool contains(const char* s);
+		bool insert(const char* s);
+		bool remove(const char* s);
 	protected:
 		LinkedList** table;
 		int size;
-		int hash_str(char* string);
+		int hash_str(const char* s);
 		int hash(int prehash);
 };
