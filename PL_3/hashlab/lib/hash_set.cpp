@@ -62,7 +62,6 @@ bool HashSet::insert(const char* s)
 		if (table[hash] == NULL)
 		{
 			table[hash] = new LinkedList();
-			std::cout << table[hash] << std::endl;
 		}
 		
 		table[hash]->insert_tail(data);

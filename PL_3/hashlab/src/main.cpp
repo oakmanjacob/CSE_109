@@ -21,11 +21,9 @@ void import_lines(HashSet *set, int numNames)
 
 	if (file.is_open())
 	{
-		cout << "Opened File" << endl;
 		while (i < numNames && getline(file, name, '\n'))
 		{
 			cname = name.c_str();
-			cout << cname << endl;
 			set->insert(cname);
 			i++;
 		}
@@ -44,13 +42,17 @@ void test_set()
 }
 
 int main() {
-
-	cout << filename << endl;
+	LinkedList *linkedList1 = new LinkedList();
     HashSet *set1 = new HashSet(10);
     HashSet *set2 = new HashSet(100);
     HashSet *set3 = new HashSet(1000);
 
+
 	import_lines(set1, 1000);
+	import_lines(set2, 1000);
+	import_lines(set3, 1000);
+
+
 
 	delete set1;
 	delete set2;
