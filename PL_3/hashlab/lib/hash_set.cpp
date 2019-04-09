@@ -35,14 +35,13 @@ HashSet::~HashSet()
 /**
  * Returns true if the hash set contains the supplied key, false otherwise
  */
-bool HashSet::contains(const char* s)
+bool HashSet::contains(int key)
 {
-	int data = this->hash_str(s);
-	int hash = this->hash(data);
+	int hash = this->hash(key);
 
 	if (table[hash] != NULL)
 	{
-		return table[hash]->find(data) >= 0;
+		return table[hash]->find(key) >= 0;
 	}
 	
 	return false;
@@ -52,19 +51,18 @@ bool HashSet::contains(const char* s)
  * Inserts the given key into the hash set. Returns true on success, false
  * otherwise
  */
-bool HashSet::insert(const char* s)
+bool HashSet::insert(int key)
 {
-	int data = this->hash_str(s);
-	int hash = this->hash(data);
+	int hash = this->hash(key);
 
-	if (!this->contains(s))
+	if (!this->contains(key))
 	{
 		if (table[hash] == NULL)
 		{
 			table[hash] = new LinkedList();
 		}
 		
-		table[hash]->insert_tail(data);
+		table[hash]->insert_tail(key);
 	}
 	return false;
 }
@@ -73,14 +71,13 @@ bool HashSet::insert(const char* s)
  * Removes the given key from the hash set. Returns true on success, false
  * otherwise
  */
-bool HashSet::remove(const char *s)
+bool HashSet::remove(int key)
 {
-	int data = this->hash_str(s);
-	int hash = this->hash(data);
+	int hash = this->hash(key);
 
-	if (this->contains(s))
+	if (this->contains(key))
 	{
-		int index = this->table[hash]->find(data);
+		int index = this->table[hash]->find(key);
 		this->table[hash]->remove_at_index(index);
 		return true;
 	}

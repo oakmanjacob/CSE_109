@@ -7,24 +7,53 @@
 #include "hash_set.h"
 #include "linked_list.h"
 
-#define filename "names.txt"
+#define A 54059   /* a prime */
+#define B 76963   /* another prime */
+#define C 86969   /* yet another prime */
+#define FIRSTH 37 /* also prime */
 
 using namespace std;
 
-void import_lines(HashSet *set, int numNames)
+int hash_str(const char *s)
+{
+	unsigned long h = FIRSTH;
+	while (*s)
+	{
+		h = (h * A) ^ (s[0] * B);
+		s++;
+	}
+
+	return h % INT32_MAX; // or return h % C;
+}
+
+void import_names(HashSet *set, int *names, int numNames)
+{
+	for (unsigned int i = 0; i < numNames && i < sizeof(names); i++)
+	{
+		set->insert(names[i]);
+	}
+}
+
+void import_names(LinkedList *list, int *names, int numNames)
+{
+	for (unsigned int i = 0; i < numNames && i < sizeof(names); i++)
+	{
+		list->insert_tail(names[i]);
+	}
+}
+
+void read_file(string filename, int numNames, int *names)
 {
 	ifstream file;
 	file.open(filename);
 	string name = "";
-	const char* cname = NULL;
-	int i = 0;
 
+	unsigned int i = 0;
 	if (file.is_open())
 	{
 		while (i < numNames && getline(file, name, '\n'))
 		{
-			cname = name.c_str();
-			set->insert(cname);
+			names[i] = hash_str(name.c_str());
 			i++;
 		}
 
@@ -36,21 +65,38 @@ void import_lines(HashSet *set, int numNames)
 	}
 }
 
-void test_set()
-{
-
-}
-
 int main() {
-	LinkedList *linkedList1 = new LinkedList();
+	clock_t t;
+	string filename = "names.txt";
+	int numNames = 1000;
+	int* names = new int[numNames];
+
+	read_file(filename, numNames, names);
+
+	LinkedList *list = new LinkedList();
     HashSet *set1 = new HashSet(10);
     HashSet *set2 = new HashSet(100);
     HashSet *set3 = new HashSet(1000);
 
+	t = clock();
+	import_names(list, names, 1000);
 
-	import_lines(set1, 1000);
-	import_lines(set2, 1000);
-	import_lines(set3, 1000);
+	t = clock() - t;
+	cout << t << endl;
+
+	t = clock() - t;
+	import_names(set1, names, 1000);
+
+	t = clock() - t;
+	cout << t << endl;
+
+	import_names(set2, names, 1000);
+	t = clock() - t;
+	cout << t << endl;
+
+	import_names(set3, names, 1000);
+	t = clock() - t;
+	cout << t << endl;
 
 
 
