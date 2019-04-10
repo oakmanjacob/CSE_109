@@ -1,5 +1,4 @@
 #include <cstdlib>
-#include <iostream>
 #include <hash_set.h>
 #include <linked_list.h>
 
@@ -14,6 +13,10 @@
 HashSet::HashSet(int size)
 {
 	this->table = new LinkedList*[size];
+	for (int i = 0; i < size; i++)
+	{
+		this->table[i] = new LinkedList();
+	}
 
 	this->size = size;
 }
@@ -38,13 +41,7 @@ HashSet::~HashSet()
 bool HashSet::contains(int key)
 {
 	int hash = this->hash(key);
-
-	if (table[hash] != NULL)
-	{
-		return table[hash]->find(key) >= 0;
-	}
-	
-	return false;
+	return table[hash]->find(key) >= 0;
 }
 
 /**
@@ -55,15 +52,10 @@ bool HashSet::insert(int key)
 {
 	int hash = this->hash(key);
 
-	if (!this->contains(key))
-	{
-		if (table[hash] == NULL)
-		{
-			table[hash] = new LinkedList();
-		}
-		
-		table[hash]->insert_tail(key);
-	}
+	// if (!this->contains(key))
+	// {		
+		return table[hash]->insert_tail(key);
+	// }
 	return false;
 }
 
@@ -98,7 +90,7 @@ int HashSet::hash_str(const char *s)
 		s++;
 	}
 
-	return h % INT32_MAX; // or return h % C;
+	return h % __INT32_MAX__; // or return h % C;
 }
 
 /**

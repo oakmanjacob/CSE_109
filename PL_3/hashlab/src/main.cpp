@@ -2,7 +2,7 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-#include <ctime>
+#include <chrono>
 #include <fstream>
 #include "hash_set.h"
 #include "linked_list.h"
@@ -14,6 +14,9 @@
 
 using namespace std;
 
+/**
+ * Convert a character array into an integer representation 
+ */
 int hash_str(const char *s)
 {
 	unsigned long h = FIRSTH;
@@ -23,38 +26,114 @@ int hash_str(const char *s)
 		s++;
 	}
 
-	return h % INT32_MAX; // or return h % C;
+	return h % __INT32_MAX__; // or return h % C;
 }
 
-void import_names(HashSet *set, int *names, int numNames)
+/**
+ * Overload Method for inserting into the HashLab
+ * Uses the insert_tail method because it is O(n)
+ */
+void import_names(HashSet *set, int *names, unsigned int numNames)
 {
-	for (unsigned int i = 0; i < numNames && i < sizeof(names); i++)
+	int counter = 0;
+	for (unsigned int i = 0; i < numNames; i++)
 	{
-		set->insert(names[i]);
+		if (set->insert(names[i]))
+		{
+			counter++;
+		}
 	}
 }
 
-void import_names(LinkedList *list, int *names, int numNames)
+/**
+ * Overload Method for inserting into the LinkedList
+ * Uses the insert_tail method because it is O(n)
+ */
+void import_names(LinkedList *list, int *names, unsigned int numNames)
 {
-	for (unsigned int i = 0; i < numNames && i < sizeof(names); i++)
+	int counter = 0;
+	for (unsigned int i = 0; i < numNames; i++)
 	{
-		list->insert_tail(names[i]);
+		if (list->insert_tail(names[i]))
+		{
+			counter++;
+		}
 	}
 }
 
-void read_file(string filename, int numNames, int *names)
+void test_hashset(HashSet* set, int numValues, int* names)
 {
+	cout << "Testing structure with " << numValues << " values" << endl;
+	chrono::duration<double> duration;
+	auto start = chrono::system_clock::now();
+
+	import_names(set, names, numValues);
+
+	duration = chrono::system_clock::now() - start;
+    cout << "Total insertion time: " << duration.count() * 1000 << "ms" << endl;
+
+	start = chrono::system_clock::now();
+	int found = 0;
+	for (int i = 0; i < numValues; i++)
+	{
+		if (set->contains(names[i]))
+		{
+			found++;
+		}
+	}
+
+	duration = chrono::system_clock::now() - start;
+	cout << "Found " << found << " out of " << numValues << " inserted names" << endl;
+    cout << "Total find time: " << duration.count() * 1000 << "ms" << endl << endl;
+}
+
+void test_linkedlist(LinkedList* list, int numValues, int* names)
+{
+	cout << "Testing structure with " << numValues << " values" << endl;
+	auto start = chrono::system_clock::now();
+	chrono::duration<double> duration;
+
+	import_names(list, names, numValues);
+
+	duration = chrono::system_clock::now() - start;
+    cout << "Total insertion time: " << duration.count() * 1000 << "ms" << endl;
+
+	start = chrono::system_clock::now();
+	int found = 0;
+	for (int i = 0; i < numValues; i++)
+	{
+		if (list->find(names[i]) >= 0)
+		{
+			found++;
+		}
+	}
+
+	duration = chrono::system_clock::now() - start;
+	cout << "Found " << found << " out of " << numValues << " inserted names" << endl;
+    cout << "Total find time: " << duration.count() * 1000 << "ms" << endl << endl;
+}
+
+int main() {
+	string filename = "names.txt";
+	unsigned int numNames = 1000;
+	int* names = new int[numNames];
+
+	/**
+	 * Read the first 1000 names from the file and store the prehashed ints
+	 * in an array
+	 */
+
 	ifstream file;
 	file.open(filename);
 	string name = "";
 
-	unsigned int i = 0;
+	unsigned int nameCounter = 0;
 	if (file.is_open())
 	{
-		while (i < numNames && getline(file, name, '\n'))
+		while (nameCounter < numNames && getline(file, name))
 		{
-			names[i] = hash_str(name.c_str());
-			i++;
+			names[nameCounter] = hash_str(name.c_str());
+			nameCounter++;
 		}
 
 	}
@@ -63,44 +142,48 @@ void read_file(string filename, int numNames, int *names)
 		cout << "Could not read file: " << filename << "." << endl;
 		exit(0);
 	}
-}
 
-int main() {
-	clock_t t;
-	string filename = "names.txt";
-	int numNames = 1000;
-	int* names = new int[numNames];
+	cout << 
+		"   _____  _____ ______   __  ___   ___                  " 		<< endl <<
+		"  / ____|/ ____|  ____| /_ |/ _ \\ / _ \\                 " 	<< endl <<
+		" | |    | (___ | |__     | | | | | (_) |                " 		<< endl <<
+		" | |     \\___ \\|  __|    | | | | |\\__, |                " 	<< endl <<
+		" | |____ ____) | |____   | | |_| |  / /                 " 		<< endl <<
+		"  ______|_____/|________ __|\\___/ _/_/                 " 		<< endl <<
+		"                                                 ____  " 		<< endl <<
+		" | |  | |   /\\    / ____| |  | | | |        /\\   |  _ \\ " 	<< endl <<
+		" | |__| |  /  \\  | (___ | |__| | | |       /  \\  | |_) |" 	<< endl <<
+		" |  __  | / /\\ \\  \\___ \\|  __  | | |      / /\\ \\ |  _ < "<< endl <<
+		" | |  | |/ ____ \\ ____) | |  | | | |____ / ____ \\| |_) |" 	<< endl <<
+		" |_|  |_/_/    \\_|_____/|_|  |_| |______/_/    \\_|____/ " 	<< endl <<
+		"  __  __   ____  ___  ____  _______   __" 						<< endl <<
+		" /  \\/  \\ / ___/  _ \\|  _ \\| ____\\ \\ / /" 				<< endl <<
+		" \\      / | |  | | | | |_) |  _|  \\ V / "					<< endl <<
+		"  \\    /  | |__| |_| | _ < | |___  | |  " 					<< endl <<
+		"   \\ /    \\____\\ ___/|_|\\_ |_____| |_|  " 					<< endl << endl << endl;
 
-	read_file(filename, numNames, names);
+	// Test LinkedList with 10, 100 and 1000 names
+	LinkedList* list = NULL;
+	cout << "--------- " << "LinkedList" << " ---------" << endl;
+	for (int i = 10; i <= 1000; i *= 10)
+	{
+		list = new LinkedList();
+		test_linkedlist(list, i, names);
+		delete list;
+	}
 
-	LinkedList *list = new LinkedList();
-    HashSet *set1 = new HashSet(10);
-    HashSet *set2 = new HashSet(100);
-    HashSet *set3 = new HashSet(1000);
+	// Test HashSets with size 10, 100, 1000
+	// And 10, 100, 1000 names
+	HashSet* set = NULL;
+	for (int i = 10; i <= 1000; i *= 10)
+	{
+		cout << "--------- " << "HASHSET SIZE " << i << " ---------" << endl;
+		for (int j = 10; j <= 1000; j *= 10)
+		{
+			set = new HashSet(i);
+			test_hashset(set, j, names);
+			delete set;
+		}
+	}
 
-	t = clock();
-	import_names(list, names, 1000);
-
-	t = clock() - t;
-	cout << t << endl;
-
-	t = clock() - t;
-	import_names(set1, names, 1000);
-
-	t = clock() - t;
-	cout << t << endl;
-
-	import_names(set2, names, 1000);
-	t = clock() - t;
-	cout << t << endl;
-
-	import_names(set3, names, 1000);
-	t = clock() - t;
-	cout << t << endl;
-
-
-
-	delete set1;
-	delete set2;
-	delete set3;
 }
