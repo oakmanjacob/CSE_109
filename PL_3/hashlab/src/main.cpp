@@ -83,7 +83,7 @@ void test_hashset(HashSet* set, int numValues, int* names)
 	}
 
 	duration = chrono::system_clock::now() - start;
-	cout << "Found " << found << " out of " << numValues << " inserted names" << endl;
+	// cout << "Found " << found << " out of " << numValues << " inserted names" << endl;
     cout << "Total find time: " << duration.count() * 1000 << "ms" << endl << endl;
 }
 
@@ -109,7 +109,7 @@ void test_linkedlist(LinkedList* list, int numValues, int* names)
 	}
 
 	duration = chrono::system_clock::now() - start;
-	cout << "Found " << found << " out of " << numValues << " inserted names" << endl;
+	// cout << "Found " << found << " out of " << numValues << " inserted names" << endl;
     cout << "Total find time: " << duration.count() * 1000 << "ms" << endl << endl;
 }
 
@@ -143,7 +143,7 @@ int main() {
 		exit(0);
 	}
 
-	cout << 
+	cout << endl <<
 		"   _____  _____ ______   __  ___   ___                  " 		<< endl <<
 		"  / ____|/ ____|  ____| /_ |/ _ \\ / _ \\                 " 	<< endl <<
 		" | |    | (___ | |__     | | | | | (_) |                " 		<< endl <<

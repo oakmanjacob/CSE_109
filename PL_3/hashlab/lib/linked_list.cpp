@@ -1,12 +1,19 @@
 #include <cstdlib>
 #include "linked_list.h"
 
+/**
+ * Constructor for Node
+ */
 Node::Node(int data)
 {
 	this->data = data;
 	next = NULL;
 }
 
+/**
+ * Destructor for Node
+ * also deletes any nodes connected
+ */
 Node::~Node()
 {
 	if (next != NULL)
@@ -15,6 +22,9 @@ Node::~Node()
 	}
 }
 
+/**
+ * Constructor for LinkedList
+ */
 LinkedList::LinkedList()
 {
 	length = 0;
@@ -22,6 +32,10 @@ LinkedList::LinkedList()
 	tail = NULL;
 }
 
+/**
+ * Destructor for LinkedList
+ * Deletes the head which should also delete all subsequent nodes
+ */
 LinkedList::~LinkedList()
 {
 	if (head != NULL)
@@ -30,11 +44,17 @@ LinkedList::~LinkedList()
 	}
 }
 
+/**
+ * Returns the number of nodes in the linked list
+ */
 int LinkedList::len()
 {
 	return length;
 }
 
+/**
+ * Insert a node at the start of the list
+ */
 bool LinkedList::insert_head(int data)
 {
 	if (head == NULL)
@@ -53,6 +73,9 @@ bool LinkedList::insert_head(int data)
 	return true;
 }
 
+/**
+ * Insert a node at the end of the list
+ */
 bool LinkedList::insert_tail(int data)
 {
 	if (head == NULL)
@@ -70,6 +93,9 @@ bool LinkedList::insert_tail(int data)
 	return true;
 }
 
+/**
+ * Insert a node at the given index
+ */
 bool LinkedList::insert_at_index(int index, int data)
 {
 	if (index >= length)
@@ -98,6 +124,9 @@ bool LinkedList::insert_at_index(int index, int data)
 	return true;
 }
 
+/**
+ * Remove the head node, making the second node the head
+ */
 bool LinkedList::remove_head()
 {
 	if (head == NULL)
@@ -118,11 +147,17 @@ bool LinkedList::remove_head()
 	return true;
 }
 
+/**
+ * Remove the last node ofthe linked list
+ */
 bool LinkedList::remove_tail()
 {
 	return remove_at_index(length - 1);
 }
 
+/**
+ * Remove the node atthe given index
+ */
 bool LinkedList::remove_at_index(int index)
 {
 	if (index >= length)
@@ -152,6 +187,10 @@ bool LinkedList::remove_at_index(int index)
 	return true;
 }
 
+/**
+ * Returns the index of the node that first contains the given data.
+ * Returns -1 if the node is not found in the linked list.
+ */
 int LinkedList::find(int data)
 {
 	Node *curNode = head;

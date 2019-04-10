@@ -8,6 +8,7 @@
 #define FIRSTH 37 /* also prime */
 
 /**
+ * Constructor for HashSet
  * Initialize table to size
  */
 HashSet::HashSet(int size)
@@ -22,6 +23,7 @@ HashSet::HashSet(int size)
 }
 
 /**
+ * Destructor for HashSet
  * Clear out the table
  */
 HashSet::~HashSet()
