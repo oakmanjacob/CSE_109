@@ -143,6 +143,9 @@ int main() {
 		exit(0);
 	}
 
+	/**
+	 * Print Header Message
+	 */
 	cout << endl <<
 		"   _____  _____ ______   __  ___   ___                  " 		<< endl <<
 		"  / ____|/ ____|  ____| /_ |/ _ \\ / _ \\                 " 	<< endl <<
@@ -177,7 +180,7 @@ int main() {
 	HashSet* set = NULL;
 	for (int i = 10; i <= 1000; i *= 10)
 	{
-		cout << "--------- " << "HASHSET SIZE " << i << " ---------" << endl;
+		cout << "--------- " << "HashSet Size " << i << " ---------" << endl;
 		for (int j = 10; j <= 1000; j *= 10)
 		{
 			set = new HashSet(i);
