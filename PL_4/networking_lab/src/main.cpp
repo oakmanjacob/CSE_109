@@ -7,6 +7,10 @@ using namespace std;
 
 vector<Message> message_list;
 
+/**
+ * Print a vector of unsigned characters as hex
+ * Not actually used in final program
+ */
 void printVector(vector<unsigned char> data)
 {
 	for (int i = 0; i < data.size(); i++) {
@@ -15,6 +19,9 @@ void printVector(vector<unsigned char> data)
 	printf("\n");
 }
 
+/**
+ * Serialize, deserialize and then print a series of 10 faux messages
+ */
 int main() {
 	cout <<
 		"======================================================================================================" << endl << endl <<
