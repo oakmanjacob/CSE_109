@@ -15,6 +15,9 @@ struct Message {
 	string message;
 };
 
+/**
+ * Serialize int as [type][data]
+ */
 vector<unsigned char> serialize_int(int data) {
 	vector<unsigned char> serialized;
 	serialized.push_back(int_type);
@@ -25,6 +28,9 @@ vector<unsigned char> serialize_int(int data) {
 	return serialized;
 }
 
+/**
+ * Serialize string as [type][length][c1][c2]...[cn]
+ */
 vector<unsigned char> serialize_str(string data) {
 	vector<unsigned char> serialized;
 	serialized.push_back(str_type);
@@ -37,6 +43,10 @@ vector<unsigned char> serialize_str(string data) {
 	return serialized;
 }
 
+/**
+ * Serialize field as [type][name][data]
+ * Where name is a serialized as a string and data is a serialized as an int
+ */
 vector<unsigned char> serialize_int_field(string name, int data) {
 	vector<unsigned char> serialized;
 	serialized.push_back(field_type);
@@ -50,6 +60,10 @@ vector<unsigned char> serialize_int_field(string name, int data) {
 	return serialized;
 }
 
+/**
+ * Serialize field as [type][name][data]
+ * Where name and data are serialized as strings
+ */
 vector<unsigned char> serialize_str_field(string name, string data) {
 	vector<unsigned char> serialized;
 	serialized.push_back(field_type);
@@ -63,6 +77,11 @@ vector<unsigned char> serialize_str_field(string name, string data) {
 	return serialized;
 }
 
+/**
+ * Serialize message as [type][number of fields][timestamp][username][message]
+ * where timestamp is serialized as an integer field and
+ * username and message are serialized as string fields.
+ */
 vector<unsigned char> serialize_message(Message msg) {
 	vector<unsigned char> serialized;
 	//Type
@@ -84,15 +103,33 @@ vector<unsigned char> serialize_message(Message msg) {
 	return serialized;
 }
 
-int deserialize_int(vector<unsigned char> data) {
+/**
+ * Deserialize an integer
+ */
+int deserialize_int(vector<unsigned char> stream) {
+	if (stream[0] != int_type)
+	{
+		printf("ERROR: Tried to read non int type as int\n");
+		exit(0);
+	}
+
 	int deser = 0;
 	for (int i = 1; i < 5; i++) {
-		deser = ((int)data[i] << ((4 - i) * 8)) | deser;
+		deser = ((int)stream[i] << ((4 - i) * 8)) | deser;
 	} 
 	return deser;
 }
 
+/**
+ * Deserialize a string
+ */
 string deserialize_string(vector<unsigned char> stream) {
+	if (stream[0] != str_type)
+	{
+		printf("ERROR: Tried to read non string type as string\n");
+		exit(0);
+	}
+
 	string deser = "";
 	int size = stream[1];
 	for (int i = 0; i < size; i++)
@@ -103,9 +140,17 @@ string deserialize_string(vector<unsigned char> stream) {
 	return deser;
 }
 
+/**
+ * Deserialize a message
+ */
 Message deserialize_message(vector<unsigned char> stream)
 {
 	Message msg = Message();
+	if (stream[0] != msg_type)
+	{
+		printf("ERROR: Tried to read non message type as message\n");
+		exit(0);
+	}
 
 	string name;
 	int int_value;
@@ -120,8 +165,8 @@ Message deserialize_message(vector<unsigned char> stream)
 	{
 		if (stream[counter] != field_type)
 		{
-			printf("it broke son\n");
-			exit(4);
+			printf("ERROR: Tried to read non field type as field\n");
+			exit(0);
 		}
 		counter++;
 
@@ -153,7 +198,7 @@ Message deserialize_message(vector<unsigned char> stream)
 		else
 		{
 			//Something's very wrong
-			printf("unknown field type\n");
+			printf("ERROR: unknown field type\n");
 			exit(0);
 		}
 		

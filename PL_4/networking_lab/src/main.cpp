@@ -96,11 +96,9 @@ int main() {
 	for (int i = 0; i < message_list.size(); i++)
 	{
 		output = serialize_message(message_list[i]);
-
-		printVector(output);
 		average = ((i * average) + output.size()) / (i + 1);
 		deserialized = deserialize_message(output);
-		printf("{\n\ttimestamp: %i,\n\tusername: \"%s\",\n\tmessage: \"%s\"\n}\n",
+		printf("timestamp: %i,\nusername: \"%s\",\nmessage: \"%s\"\n\n",
 			deserialized.timestamp, deserialized.username.c_str(), deserialized.message.c_str());
 	}
 
