@@ -5,7 +5,7 @@ all: networking
 	mv networking build/bin
 	
 networking:
-	g++ -I include src/main.cpp -o networking
+	g++ -g -I include src/main.cpp -o networking
 
 clean:
 	rm -r build

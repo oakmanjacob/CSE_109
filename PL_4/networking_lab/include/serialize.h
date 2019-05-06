@@ -18,7 +18,7 @@ struct Message {
 vector<unsigned char> serialize_int(int data) {
 	vector<unsigned char> serialized;
 	serialized.push_back(int_type);
-	for (int i=0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 		unsigned char shifted = (unsigned char)((data << (i * 8)) >> (3 * 8));
 		serialized.push_back(shifted);
 	}
@@ -28,8 +28,8 @@ vector<unsigned char> serialize_int(int data) {
 vector<unsigned char> serialize_str(string data) {
 	vector<unsigned char> serialized;
 	serialized.push_back(str_type);
-	serialized.push_back((unsigned char) data.length);
-	for (int i = 0; i < data.length; i++)
+	serialized.push_back((unsigned char) data.size());
+	for (int i = 0; i < data.size(); i++)
 	{
 		serialized.push_back((unsigned char) data.at(i));
 	}
@@ -69,7 +69,7 @@ vector<unsigned char> serialize_message(Message msg) {
 	serialized.push_back(msg_type);
 
 	//Number of fields
-	serialized.push_back(3);
+	serialized.push_back((unsigned char) 3);
 
 	//Fields
 	vector<unsigned char> timestamp_serial = serialize_int_field("timestamp", msg.timestamp);
@@ -86,7 +86,7 @@ vector<unsigned char> serialize_message(Message msg) {
 
 int deserialize_int(vector<unsigned char> data) {
 	int deser = 0;
-	for (int i = 1; i < data.size(); i++) {
+	for (int i = 1; i < 5; i++) {
 		deser = ((int)data[i] << ((4 - i) * 8)) | deser;
 	} 
 	return deser;
@@ -99,36 +99,65 @@ string deserialize_string(vector<unsigned char> stream) {
 	{
 		deser += stream[i + 2];
 	}
-
+ 
 	return deser;
 }
 
 Message deserialize_message(vector<unsigned char> stream)
 {
-	Message msg;
+	Message msg = Message();
 
 	string name;
 	int int_value;
 	string string_value;
 
 	int counter = 1;
+	int field_count = stream[counter];
+	counter++;
 
-	vector<unsigned char> newVec(stream.begin() + counter, stream.end());
-
-	name = deserialize_string();
-
-	if (name == "timestamp")
+	//Read through the fields
+	for (int i = 0; i < field_count; i++)
 	{
-		msg.timestamp = int_value;
+		if (stream[counter] != field_type)
+		{
+			printf("it broke son\n");
+			exit(4);
+		}
+		counter++;
+
+		vector<unsigned char> sub(stream.begin() + counter, stream.end());
+
+		name = deserialize_string(sub);
+		counter += 2 + name.size();
+		
+		if (name == "timestamp")
+		{
+			vector<unsigned char> sub(stream.begin() + counter, stream.end());
+			msg.timestamp = deserialize_int(sub);
+			counter += 5;
+		}
+		else if (name == "username")
+		{
+			vector<unsigned char> sub(stream.begin() + counter, stream.end());
+			string_value = deserialize_string(sub);
+			counter += 2 + string_value.size();
+			msg.username = string_value;
+		}
+		else if (name == "message")
+		{
+			vector<unsigned char> sub(stream.begin() + counter, stream.end());
+			string_value = deserialize_string(sub);
+			counter += 2 + string_value.size();
+			msg.message = string_value;
+		}
+		else
+		{
+			//Something's very wrong
+			printf("unknown field type\n");
+			exit(0);
+		}
+		
 	}
 
-	if (name == "username")
-	{
-		msg.username = string_value;
-	}
-
-	if (name == "message")
-	{
-		msg.message = string_value;
-	}
+	return msg;
 }
