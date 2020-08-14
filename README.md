@@ -1,3 +1,3 @@
 # CSE_109
 
-This is pretty much all the work I did for CSE 109 at Lehigh University.
+Here is all the work I did for CSE 109: Systems Software at Lehigh University.
